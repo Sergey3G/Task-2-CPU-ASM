@@ -7,7 +7,7 @@
 #include "assembler.h"
 #include "../instructions.h"
 
-Command commands[] = {{"HLT", HLT, 0, 0},
+static Command commands[] = {{"HLT", HLT, 0, 0},
                       {"PUSH", PUSH, 1, 0},
                       {"ADD", ADD, 0, 0},
                       {"SUB", SUB, 0, 0},
@@ -138,7 +138,15 @@ int my_atoi(const char* str)
 	return sign * result;
 }
 
-
+const Command* find_cmd(const char* name)
+{
+    for (size_t i = 0; i < sizeof(commands) / sizeof(Command); i++)
+    {
+        if (!strcmp(commands[i].name, name))
+            return &commands[i];
+    }
+    return NULL;
+}
 
 int* compile_to_bytecode(char** str_array, size_t count)
 {
@@ -149,76 +157,28 @@ int* compile_to_bytecode(char** str_array, size_t count)
         return NULL;
     }
 
-    int* changing_bytecode = bytecode;
-
-    *changing_bytecode = 0;
-    changing_bytecode++;
-
-    // Command
-        // for (n_command)
-            // if (strcmp(data, Commands[i].name) == 0)
+    int* ptr = bytecode + 1;
     for (size_t i = 0; i < count; i++)
     {
-        if (strncmp(str_array[i], "PUSH", 4) == 0)
-        {
-            char* start_instruction = str_array[i];
-            *changing_bytecode = PUSH;
-            start_instruction += 4;
-            changing_bytecode++;
+        char mnemonic[32] = {0};
+        sscanf(str_array[i], "%31s", mnemonic);
 
-            *changing_bytecode = my_atoi(start_instruction);
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 2;
-        }
-        else if (strcmp(str_array[i], "ADD") == 0)
+        const Command* cmd = find_cmd(mnemonic);
+        if (!cmd)
         {
-            *changing_bytecode = ADD;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
+            printf("Unknown instruction: %s!\n", mnemonic);
+            continue;
         }
-        else if (strcmp(str_array[i], "SUB") == 0)
+
+        *ptr++ = cmd->code;
+        (*bytecode)++;
+
+        if (cmd->arg_count == 1)
         {
-            *changing_bytecode = SUB;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
-        }
-        else if (strcmp(str_array[i], "MUL") == 0)
-        {
-            *changing_bytecode = MUL;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
-        }
-        else if (strcmp(str_array[i], "DIV") == 0)
-        {
-            *changing_bytecode = DIV;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
-        }
-        else if (strcmp(str_array[i], "SQRT") == 0)
-        {
-            *changing_bytecode = SQRT;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 2;
-        }
-        else if (strcmp(str_array[i], "OUT") == 0)
-        {
-            *changing_bytecode = OUT;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
-        }
-        else if (strcmp(str_array[i], "HLT") == 0)
-        {
-            *changing_bytecode = HLT;
-            changing_bytecode++;
-            print_bytecode(bytecode, str_array[i], count, i);
-            *bytecode += 1;
+            int arg = 0;
+            sscanf(str_array[i] + strlen(cmd->name), "%d", &arg);
+            *ptr++ = arg;
+            (*bytecode)++;
         }
     }
 

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "stack.h"
-#include "instructions.h"
 
 Errors verify_stack(Stack* stack)
 {
@@ -75,7 +74,7 @@ void stack_dump(Stack* stack)
 	}
 
 	printf("\n--- Memory formation ---\n");
-	printf("[Left canary] = 0x%X\n", stack->data[0]);
+	printf("[Left canary] = 0x%d\n", stack->data[0]);
 
 	for (size_t i = 1; i <= stack->capacity; i++)
 	{
@@ -89,23 +88,27 @@ void stack_dump(Stack* stack)
 		}
 	}
 
-	printf("[Right canary] = 0x%X\n", stack->data[stack->capacity + 1]);
+	printf("[Right canary] = 0x%d\n", stack->data[stack->capacity + 1]);
 	printf("============================================\n\n");
 }
 
 
 Errors construct_stack(Stack* stack, size_t stk_capacity)
 {
+	Errors err = NO_ERRORS;
+
 	if (!stack)
 	{
 		printf("Stack is null!");
-		return;
+		err = STACK_CONSTRUCT_NULL;
+		return err;
 	}
 	stack->data = (data_t*)calloc(stk_capacity + 2, sizeof(data_t));
 	if (!stack->data)
 	{
 		printf("Error: memory allocation failed!\n");
-		return;
+		err = DATA_NULL_PTR;
+		return err;
 	}
 	stack->capacity = stk_capacity;
 	stack->size = 0;
@@ -140,7 +143,7 @@ Errors push_stack(Stack* stack, data_t value)
 		if (!stack->data)
 		{
 			printf("Error: memory allocation failed!");
-			return;
+			return err;
 		}
 
 		for (size_t i = old_capacity + 2; i < stack->capacity + 2; i++)

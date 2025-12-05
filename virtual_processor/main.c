@@ -12,11 +12,15 @@ int main()
 		return 1;
 	}
 
+	Errors err = NO_ERRORS;
+
 	Stack stack = {};
-	construct_stack(&stack, 10);
+	err = construct_stack(&stack, 10);
 
 	Processor processor = {};
 	construct_processor(&processor, &stack, bytecode);
+
+	execute_bytecode(&processor);
 
 	processor_dump(&processor);
 	destruct_stack(&stack);

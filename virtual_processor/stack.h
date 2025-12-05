@@ -1,7 +1,9 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include "errors.h"
+#include "../errors.h"
+#include "../instructions.h"
+#include "stack.h"
 
 #define CANARY 0xDEDDED
 

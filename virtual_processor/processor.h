@@ -3,7 +3,7 @@
 
 #include "stack.h"
 #include "../instructions.h"
-#include "ariphmetics.h"
+#include "stack_funcs.h"
 #include "../errors.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -33,10 +33,12 @@ typedef struct Processor
     data_t ram[14400];
 } Processor;
 
+typedef Errors (*CommandFunctionPtr)(Processor*);
+
 typedef struct Command
 {
     Instructions code;
-    Errors (*function_ptr)(Processor*);
+    CommandFunctionPtr function;
 } Command;
 
 int* read_bytecode(char* filename);

@@ -5,13 +5,14 @@
 #include "processor.h"
 #include "processor_funcs.h"
 
-Command commands[] = {{PUSH, &processor_push},
+static Command commands[] = {{PUSH, &processor_push},
                       {ADD, &processor_add},
                       {SUB, &processor_sub},
                       {MUL, &processor_mul},
                       {DIV, &processor_div},
                       {SQRT, &processor_sqrt},
-                      {OUT, &processor_out}};
+                      {OUT, &processor_out},
+                      {HLT, &processor_hlt}};
 
 int* read_bytecode(char* filename)
 {
@@ -193,45 +194,44 @@ Errors execute_bytecode(Processor* cpu)
         return err;
     }
 
+    cpu->instruction_pointer = 1;
+
     while (cpu->instruction_pointer < cpu->bytecode[0] + 1)
     {
-        switch (cpu->bytecode[cpu->instruction_pointer])
+        int current_command_code = cpu->bytecode[cpu->instruction_pointer];
+        int command_found = 0;
+        for (size_t i = 0; i < sizeof(commands) / sizeof(Command); i++) // size in constant
         {
-            case PUSH:
-                cpu->instruction_pointer++;
-                err = stack_push(cpu->stack, cpu->bytecode[cpu->instruction_pointer]);
+            printf("bytecode[%zu] = %d\n", cpu->instruction_pointer, cpu->bytecode[cpu->instruction_pointer]);
+            printf("commands[%zu].code = %d\n", i, commands[i].code);
+            if (cpu->bytecode[cpu->instruction_pointer] == commands[i].code)
+            {
+                err = commands[i].function(cpu);
+                if (err == PROC_HALT)
+                {
+                    printf("Execution finished by HLT!\n");
+                    return NO_ERRORS;
+                }
+
                 if (err != NO_ERRORS)
                 {
+                    processor_dump(cpu);
                     return err;
                 }
-                cpu->instruction_pointer++;
-            case ADD:
-                err = stack_binary_op(cpu->stack, ADD);
-                if (err != NO_ERRORS)
-                {
-                    return err;
-                }
-            case SUB:
-                err = stack_binary_op(cpu->stack, SUB);
-                if (err != NO_ERRORS)
-                {
-                    return err;
-                }
-            case MUL:
-                err = stack_binary_op(cpu->stack, MUL);
-                if (err != NO_ERRORS)
-                {
-                    return err;
-                }
-            case DIV:
-                err = stack_div(cpu->stack);
-                if (err != NO_ERRORS)
-                {
-                    return err;
-                }
-            // i stopped here
+                command_found = 1;
+                break;
+            }
+        }
+        if (!command_found)
+        {
+            printf("Error: no such command code!\n");
+            err = (Errors)(err | PROC_INVALID_BYTECODE);
+            processor_dump(cpu);
+            return err;
         }
     }
+
+    printf("Execution completed successfully!\n");
+    err = verify_processor(cpu);
+    return err;
 }
-
-
