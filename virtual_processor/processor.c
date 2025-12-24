@@ -14,6 +14,8 @@ static Command commands[] = {{PUSH, &processor_push},
                       {OUT, &processor_out},
                       {HLT, &processor_hlt}};
 
+size_t commands_count = sizeof(commands) / sizeof(Command);
+
 int* read_bytecode(char* filename)
 {
     FILE* file = fopen(filename, "rb");
@@ -200,7 +202,7 @@ Errors execute_bytecode(Processor* cpu)
     {
         int current_command_code = cpu->bytecode[cpu->instruction_pointer];
         int command_found = 0;
-        for (size_t i = 0; i < sizeof(commands) / sizeof(Command); i++) // size in constant
+        for (size_t i = 0; i < commands_count; i++)
         {
             printf("bytecode[%zu] = %d\n", cpu->instruction_pointer, cpu->bytecode[cpu->instruction_pointer]);
             printf("commands[%zu].code = %d\n", i, commands[i].code);
