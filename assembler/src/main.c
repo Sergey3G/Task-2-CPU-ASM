@@ -1,18 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "assembler.h"
+#include "../include/assembler.h"
 
 int main(const int argc, const char* const argv[])
 {
-    const char* filename = "";
     if (argc < 2)
     {
         printf("You didn't enter input file name!\n");
         return 1;
     }
 
-    filename = argv[1];
+    const char* filename = argv[1];
 
     char* buffer = input_to_buffer(filename);
     if (!buffer)
@@ -33,16 +32,6 @@ int main(const int argc, const char* const argv[])
     {
         free(str_array);
         return 1;
-    }
-
-    for (size_t i = 0; i < strings_count - 1; i++)
-    {
-        printf("instructions[%ld]: %s\n", i + 1, str_array[i]);
-    }
-    printf("------------------------------\n");
-    for (size_t i = 0; i < (size_t)bytecode[0] + 1; i++)
-    {
-        printf("bytecode[%ld] = %d\n", i, bytecode[i]);
     }
 
     FILE* output_file = fopen("../virtual_processor/byte_code.bin", "wb");

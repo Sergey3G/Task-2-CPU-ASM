@@ -2,11 +2,11 @@
 #define PROCESSOR_H
 
 #include "stack.h"
-#include "../instructions.h"
+#include "../../instructions.h"
 #include "stack_funcs.h"
-#include "../errors.h"
+#include "../../errors.h"
 
-#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 typedef enum Registers
 {
@@ -20,7 +20,6 @@ typedef struct Register
 {
     Registers name;
     data_t value;
-    int state; // state = 0; => register is empty, state = 1; => register is filled
 } Register;
 
 typedef struct Processor
@@ -28,7 +27,7 @@ typedef struct Processor
     Stack* stack;
     int* bytecode;
     size_t instruction_pointer;
-    int* return_stack;
+    Stack* return_stack;
     Register registers[4];
     data_t ram[14400];
 } Processor;
@@ -41,9 +40,9 @@ typedef struct Command
     CommandFunctionPtr function;
 } Command;
 
-int* read_bytecode(char* filename);
+int* read_bytecode(const char* filename);
 void print_bytecode(int* bytecode, size_t size);
-void construct_processor(Processor* processor, Stack* stack, int* bytecode);
+Errors construct_processor(Processor* processor, const char* filename);
 void destruct_processor(Processor* processor);
 Errors verify_processor(const Processor* processor);
 void processor_dump(const Processor* processor);

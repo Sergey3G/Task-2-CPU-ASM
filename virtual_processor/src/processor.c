@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "processor.h"
-#include "processor_funcs.h"
+#include "../include/processor.h"
+#include "../include/processor_funcs.h"
+#include "../include/my_assert.h"
 
 static Command commands[] = {{PUSH, &processor_push},
                       {ADD, &processor_add},
@@ -12,36 +13,38 @@ static Command commands[] = {{PUSH, &processor_push},
                       {DIV, &processor_div},
                       {SQRT, &processor_sqrt},
                       {OUT, &processor_out},
-                      {HLT, &processor_hlt}};
+                      {HLT, &processor_hlt},
+                      {PUSHR, &processor_pushr},
+                      {POPR, &processor_popr},
+                      {PUSHM, &processor_pushm},
+                      {POPM, &processor_popm},
+                      {JMP, &processor_jmp},
+                      {JB, &processor_jb},
+                      {JBE, &processor_jbe},
+                      {JE, &processor_jbe},
+                      {JA, &processor_ja},
+                      {JAE, &processor_jae},
+                      {JNE, &processor_jne},
+                      {CALL, &processor_call},
+                      {RET, &processor_ret}};
 
 size_t commands_count = sizeof(commands) / sizeof(Command);
 
-int* read_bytecode(char* filename)
+int* read_bytecode(const char* filename)
 {
     FILE* file = fopen(filename, "rb");
-    if (!file)
-    {
-        printf("Error: cannot open file %s!\n", filename);
-        return NULL;
-    }
+    MY_ASSERT(file, "Error: cannot open file!\n");
 
     size_t size = 0;
     fread(&size, sizeof(int), 1, file);
 
     int* bytecode = (int*)calloc(size + 1, sizeof(int));
-    if (!bytecode)
-    {
-        printf("Error: memory allocation failed!");
-        return NULL;
-    }
+    MY_ASSERT(bytecode, "Error: memory allocation failed!\n");
 
     bytecode[0] = size;
 
     size_t read_size = fread(bytecode + 1, sizeof(int), size, file);
-    if (read_size != size)
-    {
-        printf("Error: cannot read file content correctly!");
-    }
+    MY_ASSERT((read_size == size), "Error: cannot read file content!\n");
 
     fclose(file);
     return bytecode;
@@ -63,35 +66,34 @@ void print_bytecode(int* bytecode, size_t size)
     printf("============================\n");
 }
 
-void construct_processor(Processor* processor, Stack* stack, int* bytecode)
+Errors construct_processor(Processor* processor, const char* filename)
 {
-    if (!processor)
-    {
-        printf("Error: processor is null!");
-        return;
-    }
+    MY_ASSERT(processor, "Error: processor is nullptr!\n");
+    MY_ASSERT(filename, "Error: filename is nullptr!\n");
 
-    if (!stack)
-    {
-        printf("Error: stack is null!");
-        return;
-    }
+    processor->stack = (Stack*)calloc(1, sizeof(Stack));
+    MY_ASSERT(processor->stack, "Error: memory allocation failed!\n");
+    Errors err = construct_stack(processor->stack, 10);
+    MY_ASSERT((err == NO_ERRORS), "Error: construct_stack failed!\n");
 
-    if (!bytecode)
-    {
-        printf("Error: bytecode is null!");
-        return;
-    }
+    processor->return_stack = (Stack*)calloc(1, sizeof(Stack));
+    MY_ASSERT(processor->return_stack, "Error: memory allocation failed!\n");
+    err = construct_stack(processor->return_stack, 10);
+    MY_ASSERT((err == NO_ERRORS), "Error: construct_stack failed!\n");
 
-    processor->stack = stack;
-    processor->bytecode = bytecode;
+    processor->bytecode = read_bytecode(filename);
+    MY_ASSERT(processor->bytecode, "Error: read_bytecode failed!\n");
+
     processor->instruction_pointer = 0;
-    processor->registers[AX] = {AX, 0, 0};
-    processor->registers[BX] = {BX, 0, 0};
-    processor->registers[CX] = {CX, 0, 0};
-    processor->registers[DX] = {DX, 0, 0};
-    processor->ram[14400];
+
+    processor->registers[AX] = (Register){AX, 0};
+    processor->registers[BX] = (Register){BX, 0};
+    processor->registers[CX] = (Register){CX, 0};
+    processor->registers[DX] = (Register){DX, 0};
+
     memset(processor->ram, 0, sizeof(processor->ram));
+
+    return NO_ERRORS;
 }
 
 void destruct_processor(Processor* processor)
@@ -99,7 +101,14 @@ void destruct_processor(Processor* processor)
     if (processor->stack)
     {
         destruct_stack(processor->stack);
+        free(processor->stack);
         processor->stack = NULL;
+    }
+    if (processor->return_stack)
+    {
+        destruct_stack(processor->return_stack);
+        free(processor->return_stack);
+        processor->return_stack = NULL;
     }
     if (processor->bytecode)
     {
@@ -169,26 +178,28 @@ void processor_dump(const Processor* processor)
     printf("\n--- Registers ---\n");
     for (int i = 0; i < 4; i++)
     {
-        printf("%s = %d (state = %d)\n",
+        printf("%s = %d \n",
                (processor->registers[i].name == AX) ? "AX" :
                (processor->registers[i].name == BX) ? "BX" :
                (processor->registers[i].name == CX) ? "CX" : "DX",
-                processor->registers[i].value,
-                processor->registers[i].state);
+                processor->registers[i].value);
     }
 
     printf("\n--- Stack state ---\n");
     stack_dump(processor->stack);
 
     printf("\n--- Bytecode preview ---\n");
-    for (size_t i = 0; i < min(processor->bytecode[0] + 1, 10) && processor->bytecode; i++)
+    for (size_t i = 0; i < max(processor->bytecode[0] + 1, 10) && processor->bytecode; i++)
     {
-        printf("[%02d] = %d\n", i, processor->bytecode[i]);
+        printf("[%02ld] = %d\n", i, processor->bytecode[i]);
     }
 }
 
 Errors execute_bytecode(Processor* cpu)
 {
+    MY_ASSERT(cpu, "Error: cpu is nullptr!\n");
+    MY_ASSERT(cpu->bytecode, "Error: cpu->bytecode is nullptr!\n");
+
     Errors err = verify_processor(cpu);
 
     if (err != NO_ERRORS)
@@ -204,8 +215,6 @@ Errors execute_bytecode(Processor* cpu)
         int command_found = 0;
         for (size_t i = 0; i < commands_count; i++)
         {
-            printf("bytecode[%zu] = %d\n", cpu->instruction_pointer, cpu->bytecode[cpu->instruction_pointer]);
-            printf("commands[%zu].code = %d\n", i, commands[i].code);
             if (cpu->bytecode[cpu->instruction_pointer] == commands[i].code)
             {
                 err = commands[i].function(cpu);

@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "stack_funcs.h"
+#include "../include/stack_funcs.h"
+#include "../include/my_assert.h"
 
 Errors stack_binary_op(Stack* stack, int code)
 {
+    MY_ASSERT(stack, "Error: stack is nullptr!\n");
     Errors err = verify_stack(stack);
 
     if (err != NO_ERRORS)

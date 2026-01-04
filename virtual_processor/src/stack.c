@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "stack.h"
+#include "../include/stack.h"
 
 Errors verify_stack(Stack* stack)
 {
@@ -53,7 +53,7 @@ void stack_dump(Stack* stack)
 	printf("Capacity: %zu\n", stack->capacity);
 	printf("Error flags: %d (", err);
 
-	if (err = NO_ERRORS)
+	if (err == NO_ERRORS)
 	{
 		printf("NO_ERRORS");
 	}
