@@ -9,7 +9,7 @@ CPU_DIR="$ROOT_DIR/virtual_processor"
 ASM_BIN="$ASM_DIR/build/asm"
 CPU_BIN="$CPU_DIR/build/cpu"
 
-ASM_INPUT="$ASM_DIR/instructions.asm"
+ASM_INPUT="$ASM_DIR/quadratic.asm"
 BYTECODE="$CPU_DIR/byte_code.bin"
 
 echo "==== Building assembler ===="
